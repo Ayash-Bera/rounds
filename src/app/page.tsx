@@ -80,9 +80,6 @@ export default function Home() {
         <div className="relative z-10 flex flex-1 items-center px-6">
           <div className="mx-auto w-full max-w-6xl">
             <div className="max-w-xl">
-              <span className="mb-5 inline-flex w-fit items-center gap-1.5 rounded-full border border-white/25 px-3 py-1 text-xs font-medium text-white/80">
-                Built for clinic scheduling
-              </span>
               <h1 className="font-display text-5xl font-medium leading-[1.05] tracking-tight text-white md:text-6xl">
                 Every shift covered. No spreadsheet required.
               </h1>
@@ -97,7 +94,7 @@ export default function Home() {
                   render={<Link href="/login" />}
                   nativeButton={false}
                   size="lg"
-                  className="gap-1.5 rounded-full bg-white text-[#0e0f12] hover:bg-white/90"
+                  className="gap-1.5 rounded-full border border-white/40 bg-transparent text-white hover:bg-white/10"
                 >
                   Sign in <ArrowRight className="h-4 w-4" />
                 </Button>
