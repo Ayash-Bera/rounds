@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Repeat } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Repeat } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireManager } from "@/lib/auth-helpers";
 import { Button } from "@/components/ui/button";
@@ -13,26 +13,41 @@ import { ShiftDialog } from "./shift-dialog";
 import { SeriesDialog } from "./series-dialog";
 import { DeleteShiftButton } from "./delete-shift-button";
 
+const PAGE_SIZE = 30;
+
 export default async function ShiftsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; page?: string }>;
 }) {
   await requireManager();
   const params = await searchParams;
+  const page = Math.max(1, Number(params.page) || 1);
 
-  const shifts = await prisma.shift.findMany({
-    orderBy: { date: "asc" },
-    include: { claims: true, series: true },
-    take: 60,
-  });
+  const [shifts, total] = await Promise.all([
+    prisma.shift.findMany({
+      orderBy: { date: "asc" },
+      include: { claims: true, series: true },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    }),
+    prisma.shift.count(),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const rangeStart = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const rangeEnd = Math.min(page * PAGE_SIZE, total);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-medium">Shifts</h1>
-          <p className="text-sm text-muted-foreground">Create, edit, and delete shifts.</p>
+          <p className="text-sm text-muted-foreground">
+            {total === 0
+              ? "Create, edit, and delete shifts."
+              : `Showing ${rangeStart}–${rangeEnd} of ${total} shifts.`}
+          </p>
         </div>
         <div className="flex gap-2">
           <SeriesDialog
@@ -112,6 +127,44 @@ export default async function ShiftsPage({
           </p>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between gap-3 pt-2">
+          {page <= 1 ? (
+            <Button variant="outline" size="sm" disabled className="gap-1.5 rounded-full">
+              <ChevronLeft className="h-4 w-4" /> Previous
+            </Button>
+          ) : (
+            <Button
+              render={<Link href={`/dashboard/shifts?page=${page - 1}`} />}
+              nativeButton={false}
+              variant="outline"
+              size="sm"
+              className="gap-1.5 rounded-full"
+            >
+              <ChevronLeft className="h-4 w-4" /> Previous
+            </Button>
+          )}
+          <span className="text-sm text-muted-foreground">
+            Page {page} of {totalPages}
+          </span>
+          {page >= totalPages ? (
+            <Button variant="outline" size="sm" disabled className="gap-1.5 rounded-full">
+              Next <ChevronRight className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button
+              render={<Link href={`/dashboard/shifts?page=${page + 1}`} />}
+              nativeButton={false}
+              variant="outline"
+              size="sm"
+              className="gap-1.5 rounded-full"
+            >
+              Next <ChevronRight className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

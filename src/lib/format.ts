@@ -11,6 +11,10 @@ export function professionLabel(profession: Profession): string {
   return LABELS[profession].singular;
 }
 
+export function professionLabelPlural(profession: Profession): string {
+  return LABELS[profession].plural;
+}
+
 export function formatRequirements(requirements: RequirementMap): string {
   const parts = (Object.keys(requirements) as Profession[])
     .filter((p) => requirements[p] > 0)

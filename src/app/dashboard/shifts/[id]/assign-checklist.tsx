@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { ChevronDown } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { professionLabel } from "@/lib/format";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { professionLabelPlural } from "@/lib/format";
 import type { Profession } from "@/generated/prisma/enums";
 import type { ClaimResult } from "@/lib/claims/db";
 
@@ -12,6 +14,8 @@ export type StaffRow = {
   profession: Profession;
   claimed: boolean;
 };
+
+const PROFESSION_ORDER: Profession[] = ["NURSE", "DOCTOR", "RECEPTIONIST"];
 
 export function AssignChecklist({
   shiftId,
@@ -52,29 +56,57 @@ export function AssignChecklist({
     );
   }
 
+  const groups = PROFESSION_ORDER.map((profession) => ({
+    profession,
+    members: rows.filter((r) => r.profession === profession),
+  })).filter((g) => g.members.length > 0);
+
   return (
-    <ul className="divide-y divide-border rounded-lg border">
-      {rows.map((s) => (
-        <li key={s.id} className="px-4 py-2.5">
-          <label className="flex cursor-pointer items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <Checkbox
-                checked={s.claimed}
-                disabled={pendingId === s.id}
-                onCheckedChange={(checked) => toggle(s.id, checked === true)}
-              />
-              <div>
-                <p className="text-sm font-medium">{s.fullName}</p>
-                <p className="text-xs text-muted-foreground">{professionLabel(s.profession)}</p>
-              </div>
-            </div>
-            {pendingId === s.id && (
-              <span className="text-xs text-muted-foreground">Saving…</span>
+    <div className="divide-y divide-border rounded-lg border">
+      {groups.map((group) => {
+        const claimedMembers = group.members.filter((m) => m.claimed);
+        return (
+          <div key={group.profession} className="px-4 py-2.5">
+            <Popover>
+              <PopoverTrigger className="flex w-full items-center justify-between gap-3 text-left">
+                <span className="text-sm font-medium capitalize">
+                  {professionLabelPlural(group.profession)}
+                </span>
+                <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                  {claimedMembers.length > 0
+                    ? `${claimedMembers.length} assigned`
+                    : `0 of ${group.members.length}`}
+                  <ChevronDown className="h-4 w-4" />
+                </span>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-64 p-1">
+                <ul className="max-h-72 overflow-y-auto">
+                  {group.members.map((s) => (
+                    <li key={s.id}>
+                      <label className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm hover:bg-accent">
+                        <Checkbox
+                          checked={s.claimed}
+                          disabled={pendingId === s.id}
+                          onCheckedChange={(checked) => toggle(s.id, checked === true)}
+                        />
+                        {s.fullName}
+                      </label>
+                      {errors[s.id] && (
+                        <p className="px-2 pb-1 text-xs text-status-empty">{errors[s.id]}</p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </PopoverContent>
+            </Popover>
+            {claimedMembers.length > 0 && (
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                {claimedMembers.map((m) => m.fullName).join(", ")}
+              </p>
             )}
-          </label>
-          {errors[s.id] && <p className="mt-1 text-xs text-status-empty">{errors[s.id]}</p>}
-        </li>
-      ))}
-    </ul>
+          </div>
+        );
+      })}
+    </div>
   );
 }
