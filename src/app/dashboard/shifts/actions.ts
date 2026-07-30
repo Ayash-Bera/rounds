@@ -108,24 +108,18 @@ export async function deleteSeriesAction(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
-export async function assignStaffAction(formData: FormData) {
-  const shiftId = String(formData.get("shiftId"));
+export async function assignStaffAction(shiftId: string, staffId: string) {
   await requireManager();
-  const staffId = String(formData.get("staffId"));
   const result = await claimShiftForStaff(shiftId, staffId);
-  if (!result.ok) {
-    redirect(`/dashboard/shifts/${shiftId}?error=${encodeURIComponent(result.reason)}`);
-  }
   revalidatePath(`/dashboard/shifts/${shiftId}`);
   revalidatePath("/dashboard");
-  redirect(`/dashboard/shifts/${shiftId}`);
+  return result;
 }
 
-export async function removeClaimAction(formData: FormData) {
+export async function removeClaimAction(shiftId: string, staffId: string) {
   await requireManager();
-  const shiftId = String(formData.get("shiftId"));
-  const staffId = String(formData.get("staffId"));
-  await unclaimShift(shiftId, staffId);
+  const result = await unclaimShift(shiftId, staffId);
   revalidatePath(`/dashboard/shifts/${shiftId}`);
   revalidatePath("/dashboard");
+  return result;
 }

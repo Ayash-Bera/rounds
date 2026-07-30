@@ -5,13 +5,12 @@ import { requireManager } from "@/lib/auth-helpers";
 import { getShiftClaimIssues } from "@/lib/claims/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusBadge } from "@/components/status-badge";
 import { formatDate, formatRequirements, professionLabel } from "@/lib/format";
 import { computeCoverage } from "@/lib/coverage";
 import type { RequirementMap } from "@/lib/import/types";
 import { assignStaffAction, removeClaimAction } from "../actions";
+import { AssignChecklist, type StaffRow } from "./assign-checklist";
 
 export default async function ShiftDetailPage({
   params,
@@ -30,19 +29,24 @@ export default async function ShiftDetailPage({
   const requirements = shift.requirements as RequirementMap;
   const coverage = computeCoverage(requirements, shift.claims);
 
+  const claimedIds = new Set(shift.claims.map((c) => c.staffId));
+
   const claimants = await prisma.user.findMany({
-    where: { id: { in: shift.claims.map((c) => c.staffId) } },
+    where: { id: { in: [...claimedIds] } },
   });
   const claimantById = new Map(claimants.map((c) => [c.id, c]));
 
-  const eligibleStaff = await prisma.user.findMany({
-    where: {
-      role: "STAFF",
-      profession: { not: null },
-      id: { notIn: shift.claims.map((c) => c.staffId) },
-    },
+  const allStaff = await prisma.user.findMany({
+    where: { role: "STAFF", profession: { not: null } },
     orderBy: { fullName: "asc" },
   });
+
+  const staffRows: StaffRow[] = allStaff.map((s) => ({
+    id: s.id,
+    fullName: s.fullName,
+    profession: s.profession!,
+    claimed: claimedIds.has(s.id),
+  }));
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -92,48 +96,15 @@ export default async function ShiftDetailPage({
             </p>
           )}
 
-          <ul className="divide-y divide-border rounded-lg border">
-            {shift.claims.map((claim) => {
-              const person = claimantById.get(claim.staffId);
-              return (
-                <li key={claim.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
-                  <div>
-                    <p className="text-sm font-medium">{person?.fullName ?? "Unknown"}</p>
-                    <p className="text-xs text-muted-foreground">{professionLabel(claim.profession)}</p>
-                  </div>
-                  <form action={removeClaimAction}>
-                    <input type="hidden" name="shiftId" value={shift.id} />
-                    <input type="hidden" name="staffId" value={claim.staffId} />
-                    <Button type="submit" variant="ghost" size="sm" className="text-muted-foreground">
-                      Remove
-                    </Button>
-                  </form>
-                </li>
-              );
-            })}
-            {shift.claims.length === 0 && (
-              <li className="px-4 py-3 text-sm text-muted-foreground">Nobody has claimed this shift yet.</li>
-            )}
-          </ul>
-
-          <form action={assignStaffAction} className="flex gap-2">
-            <input type="hidden" name="shiftId" value={shift.id} />
-            <Select name="staffId">
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Assign a staff member" />
-              </SelectTrigger>
-              <SelectContent>
-                {eligibleStaff.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.fullName} — {professionLabel(s.profession!)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button type="submit" className="rounded-full">
-              Assign
-            </Button>
-          </form>
+          <div>
+            <p className="mb-2 text-sm font-medium">Staff</p>
+            <AssignChecklist
+              shiftId={shift.id}
+              staff={staffRows}
+              assignAction={assignStaffAction}
+              removeAction={removeClaimAction}
+            />
+          </div>
         </CardContent>
       </Card>
     </div>

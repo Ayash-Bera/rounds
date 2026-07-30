@@ -1,0 +1,80 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { professionLabel } from "@/lib/format";
+import type { Profession } from "@/generated/prisma/enums";
+import type { ClaimResult } from "@/lib/claims/db";
+
+export type StaffRow = {
+  id: string;
+  fullName: string;
+  profession: Profession;
+  claimed: boolean;
+};
+
+export function AssignChecklist({
+  shiftId,
+  staff,
+  assignAction,
+  removeAction,
+}: {
+  shiftId: string;
+  staff: StaffRow[];
+  assignAction: (shiftId: string, staffId: string) => Promise<ClaimResult>;
+  removeAction: (shiftId: string, staffId: string) => Promise<ClaimResult>;
+}) {
+  const [rows, setRows] = useState(staff);
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [, startTransition] = useTransition();
+
+  function toggle(id: string, checked: boolean) {
+    setPendingId(id);
+    setErrors((prev) => ({ ...prev, [id]: "" }));
+    startTransition(async () => {
+      const action = checked ? assignAction : removeAction;
+      const result = await action(shiftId, id);
+      if (result.ok) {
+        setRows((prev) => prev.map((r) => (r.id === id ? { ...r, claimed: checked } : r)));
+      } else {
+        setErrors((prev) => ({ ...prev, [id]: result.reason }));
+      }
+      setPendingId(null);
+    });
+  }
+
+  if (rows.length === 0) {
+    return (
+      <p className="rounded-lg border px-4 py-3 text-sm text-muted-foreground">
+        No eligible staff found.
+      </p>
+    );
+  }
+
+  return (
+    <ul className="divide-y divide-border rounded-lg border">
+      {rows.map((s) => (
+        <li key={s.id} className="px-4 py-2.5">
+          <label className="flex cursor-pointer items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Checkbox
+                checked={s.claimed}
+                disabled={pendingId === s.id}
+                onCheckedChange={(checked) => toggle(s.id, checked === true)}
+              />
+              <div>
+                <p className="text-sm font-medium">{s.fullName}</p>
+                <p className="text-xs text-muted-foreground">{professionLabel(s.profession)}</p>
+              </div>
+            </div>
+            {pendingId === s.id && (
+              <span className="text-xs text-muted-foreground">Saving…</span>
+            )}
+          </label>
+          {errors[s.id] && <p className="mt-1 text-xs text-status-empty">{errors[s.id]}</p>}
+        </li>
+      ))}
+    </ul>
+  );
+}
