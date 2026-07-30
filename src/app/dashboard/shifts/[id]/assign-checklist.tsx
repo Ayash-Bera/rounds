@@ -6,7 +6,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { professionLabelPlural } from "@/lib/format";
 import type { Profession } from "@/generated/prisma/enums";
+import type { RequirementMap } from "@/lib/import/types";
 import type { ClaimResult } from "@/lib/claims/db";
+import { cn } from "@/lib/utils";
 
 export type StaffRow = {
   id: string;
@@ -20,11 +22,13 @@ const PROFESSION_ORDER: Profession[] = ["NURSE", "DOCTOR", "RECEPTIONIST"];
 export function AssignChecklist({
   shiftId,
   staff,
+  requirements,
   assignAction,
   removeAction,
 }: {
   shiftId: string;
   staff: StaffRow[];
+  requirements: RequirementMap;
   assignAction: (shiftId: string, staffId: string) => Promise<ClaimResult>;
   removeAction: (shiftId: string, staffId: string) => Promise<ClaimResult>;
 }) {
@@ -61,6 +65,7 @@ export function AssignChecklist({
 
   const groups = PROFESSION_ORDER.map((profession) => ({
     profession,
+    needed: requirements[profession] ?? 0,
     members: rows.filter((r) => r.profession === profession),
   })).filter((g) => g.members.length > 0);
 
@@ -68,6 +73,7 @@ export function AssignChecklist({
     <div className="divide-y divide-border rounded-lg border">
       {groups.map((group) => {
         const claimedMembers = group.members.filter((m) => m.claimed);
+        const isFull = claimedMembers.length >= group.needed;
         return (
           <div key={group.profession} className="px-4 py-2.5">
             <Popover>
@@ -76,28 +82,37 @@ export function AssignChecklist({
                   {professionLabelPlural(group.profession)}
                 </span>
                 <span className="flex items-center gap-2 text-xs text-muted-foreground">
-                  {claimedMembers.length > 0
-                    ? `${claimedMembers.length} assigned`
-                    : `0 of ${group.members.length}`}
+                  {group.needed === 0 ? "not needed" : `${claimedMembers.length} of ${group.needed}`}
                   <ChevronDown className="h-4 w-4" />
                 </span>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-64 p-1">
                 <ul className="max-h-72 overflow-y-auto">
-                  {group.members.map((s) => (
-                    <li key={s.id}>
-                      <label className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm hover:bg-accent">
-                        <Checkbox
-                          checked={s.claimed}
-                          onCheckedChange={(checked) => toggle(s.id, checked === true)}
-                        />
-                        {s.fullName}
-                      </label>
-                      {errors[s.id] && (
-                        <p className="px-2 pb-1 text-xs text-status-empty">{errors[s.id]}</p>
-                      )}
-                    </li>
-                  ))}
+                  {group.members.map((s) => {
+                    const disabled = !s.claimed && isFull;
+                    return (
+                      <li key={s.id}>
+                        <label
+                          className={cn(
+                            "flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm",
+                            disabled
+                              ? "cursor-not-allowed text-muted-foreground/50"
+                              : "cursor-pointer hover:bg-accent"
+                          )}
+                        >
+                          <Checkbox
+                            checked={s.claimed}
+                            disabled={disabled}
+                            onCheckedChange={(checked) => toggle(s.id, checked === true)}
+                          />
+                          {s.fullName}
+                        </label>
+                        {errors[s.id] && (
+                          <p className="px-2 pb-1 text-xs text-status-empty">{errors[s.id]}</p>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </PopoverContent>
             </Popover>

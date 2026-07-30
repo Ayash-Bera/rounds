@@ -3,6 +3,7 @@ import { AlertTriangle } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireManager } from "@/lib/auth-helpers";
 import { getShiftClaimIssues } from "@/lib/claims/db";
+import { shiftsOverlap } from "@/lib/claims/rules";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { StatusBadge } from "@/components/status-badge";
@@ -41,12 +42,42 @@ export default async function ShiftDetailPage({
     orderBy: { fullName: "asc" },
   });
 
-  const staffRows: StaffRow[] = allStaff.map((s) => ({
-    id: s.id,
-    fullName: s.fullName,
-    profession: s.profession!,
-    claimed: claimedIds.has(s.id),
-  }));
+  const otherClaims = await prisma.claim.findMany({
+    where: { staffId: { in: allStaff.map((s) => s.id) }, shiftId: { not: shift.id } },
+    include: { shift: true },
+  });
+  const otherShiftsByStaff = new Map<string, { date: Date; startTime: string; endTime: string; overnight: boolean }[]>();
+  for (const claim of otherClaims) {
+    const list = otherShiftsByStaff.get(claim.staffId) ?? [];
+    list.push({
+      date: claim.shift.date,
+      startTime: claim.shift.startTime,
+      endTime: claim.shift.endTime,
+      overnight: claim.shift.overnight,
+    });
+    otherShiftsByStaff.set(claim.staffId, list);
+  }
+  const shiftRange = {
+    date: shift.date,
+    startTime: shift.startTime,
+    endTime: shift.endTime,
+    overnight: shift.overnight,
+  };
+
+  // Staff who already have a conflicting overlapping shift are excluded entirely — claiming
+  // this shift would be rejected by the server anyway, so there's no reason to offer it.
+  const staffRows: StaffRow[] = allStaff
+    .filter((s) => {
+      if (claimedIds.has(s.id)) return true;
+      const others = otherShiftsByStaff.get(s.id) ?? [];
+      return !others.some((o) => shiftsOverlap(shiftRange, o));
+    })
+    .map((s) => ({
+      id: s.id,
+      fullName: s.fullName,
+      profession: s.profession!,
+      claimed: claimedIds.has(s.id),
+    }));
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -101,6 +132,7 @@ export default async function ShiftDetailPage({
             <AssignChecklist
               shiftId={shift.id}
               staff={staffRows}
+              requirements={requirements}
               assignAction={assignStaffAction}
               removeAction={removeClaimAction}
             />
