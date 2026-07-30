@@ -1,7 +1,7 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, FileWarning, Repeat } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CoverageSphere } from "@/components/coverage-sphere";
 import { StatusBadge } from "@/components/status-badge";
 
 export default function Home() {
@@ -54,8 +54,19 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="relative min-h-[320px] md:min-h-0">
-                <CoverageSphere />
+              <div className="relative min-h-[320px] overflow-hidden md:min-h-0">
+                <Image
+                  src="/hero-visual.jpg"
+                  alt=""
+                  fill
+                  priority
+                  sizes="(min-width: 768px) 45vw, 100vw"
+                  className="object-cover"
+                  style={{
+                    maskImage: "radial-gradient(circle at center, black 55%, transparent 88%)",
+                    WebkitMaskImage: "radial-gradient(circle at center, black 55%, transparent 88%)",
+                  }}
+                />
               </div>
             </div>
           </div>
