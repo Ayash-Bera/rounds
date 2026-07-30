@@ -1,36 +1,76 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Rounds
 
-## Getting Started
+A clinic shift scheduler. Managers create shifts and see coverage at a glance; staff claim shifts
+for themselves. Built for the take-home brief in `PROJECT_BRIEF.md`.
 
-First, run the development server:
+## Stack
+
+- **Next.js 16** (App Router, TypeScript, Server Actions)
+- **Prisma 7** + **Postgres**
+- **NextAuth v5** (Credentials provider, JWT sessions, role-based access)
+- **shadcn/ui** (Base UI primitives) + Tailwind v4
+- **SWR** for live-updating the coverage dashboard (polling, no extra infra required)
+- **Vitest** for unit tests
+
+See `DECISIONS.md` for why these were chosen and the reasoning behind the trickier requirements
+(concurrency, dirty CSV import, editing a shift that already has claims).
+
+## Local setup
+
+Requires Docker and Node 20.9+.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+docker compose up -d        # starts Postgres on localhost:5433
+npm install
+npx prisma migrate dev      # applies the schema
+npm run db:seed             # imports staff.csv / shifts.csv, creates the manager account
+npm run dev                 # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`.env` is already checked in with a working local `DATABASE_URL` pointing at the docker-compose
+Postgres instance — no setup needed beyond the commands above.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Tests
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm test
+```
 
-## Learn More
+Runs the Vitest suite: CSV normalization (role synonyms, date-format detection, dedup/merge
+rules, requirement parsing) and the claim business rules (headcount limits, overlap detection,
+re-validation after a shift edit).
 
-To learn more about Next.js, take a look at the following resources:
+## Seeded logins
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Every seeded account uses the password **`rounds123!`**. The full staff list comes from
+`staff.csv` after cleanup — these are a few to get started with:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Role | Email | Notes |
+|---|---|---|
+| Manager | `manager@clinicmail.test` | Full access: shifts, coverage dashboard, CSV import, import report |
+| Staff (doctor) | `chloe.hussain@clinicmail.test` | |
+| Staff (nurse) | `aisha.sharma@clinicmail.test` | |
+| Staff (receptionist) | `anya.nakamura@clinicmail.test` | |
 
-## Deploy on Vercel
+## Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Deployed on Vercel. The Postgres database is provisioned through Vercel's own Postgres
+integration (Neon-backed) — no separate account needed, `DATABASE_URL` is injected automatically.
+Cold starts: none, both the app and database run on always-warm free-tier infrastructure at this
+scale.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Live URL: _(added after deploy)_
+
+## Notable design decisions
+
+- **Editing a shift with existing claims** doesn't silently drop or auto-fix them — it flags the
+  specific claims that now violate the rules (over capacity, or newly overlapping) so a manager
+  reviews and resolves them explicitly. See `DECISIONS.md`.
+- **Concurrency**: claiming a shift takes a row lock (`SELECT ... FOR UPDATE`) inside a
+  transaction before re-checking headcount and overlap, so two people can't both claim the last
+  open slot.
+- **CSV import** is the same code path whether it runs from the seed script or a manager's
+  upload through the UI (`/dashboard/import`), and every row's outcome is visible on the Import
+  Report page (`/dashboard/import/report`).
+- **Recurring shifts** are materialized as real rows tagged with a series id, not computed
+  on the fly — editing or deleting one occurrence never touches the rest of the series.

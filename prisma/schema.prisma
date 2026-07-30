@@ -1,0 +1,125 @@
+// Prisma schema for Rounds — clinic shift scheduler
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  MANAGER
+  STAFF
+}
+
+enum Profession {
+  DOCTOR
+  NURSE
+  RECEPTIONIST
+}
+
+enum ImportSource {
+  SEED
+  UPLOAD
+}
+
+enum ImportEntityType {
+  STAFF
+  SHIFT
+}
+
+enum ImportRowStatus {
+  ACCEPTED
+  REJECTED
+  MERGED
+}
+
+model User {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  passwordHash String
+  fullName     String
+  role         Role
+  profession   Profession?
+  createdAt    DateTime    @default(now())
+
+  claims        Claim[]
+  createdShifts Shift[]       @relation("ShiftCreatedBy")
+  createdSeries ShiftSeries[]
+
+  @@index([role, profession])
+}
+
+model ShiftSeries {
+  id           String   @id @default(cuid())
+  daysOfWeek   Int[]
+  startTime    String
+  endTime      String
+  requirements Json
+  seriesStart  DateTime @db.Date
+  seriesEnd    DateTime @db.Date
+  createdById  String
+  createdBy    User     @relation(fields: [createdById], references: [id])
+  createdAt    DateTime @default(now())
+
+  shifts Shift[]
+}
+
+model Shift {
+  id           String   @id @default(cuid())
+  date         DateTime @db.Date
+  startTime    String
+  endTime      String
+  overnight    Boolean  @default(false)
+  requirements Json
+
+  seriesId    String?
+  series      ShiftSeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  createdById String?
+  createdBy   User?        @relation("ShiftCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  claims    Claim[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+  @@index([seriesId])
+}
+
+model Claim {
+  id         String     @id @default(cuid())
+  shiftId    String
+  shift      Shift      @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  staffId    String
+  staff      User       @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  profession Profession
+  createdAt  DateTime   @default(now())
+
+  @@unique([shiftId, staffId])
+  @@index([staffId])
+}
+
+model ImportBatch {
+  id        String       @id @default(cuid())
+  source    ImportSource
+  filename  String?
+  createdAt DateTime     @default(now())
+
+  rows ImportLogRow[]
+}
+
+model ImportLogRow {
+  id          String            @id @default(cuid())
+  batchId     String
+  batch       ImportBatch       @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  entityType  ImportEntityType
+  status      ImportRowStatus
+  rawRow      Json
+  reason      String?
+  resultingId String?
+  createdAt   DateTime          @default(now())
+
+  @@index([batchId])
+}
