@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { LogoMark } from "@/components/logo-mark";
 import { loginAction } from "./actions";
 
 export default async function LoginPage({
@@ -18,7 +19,7 @@ export default async function LoginPage({
     <main className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
         <Link href="/" className="mb-8 flex items-center justify-center gap-2">
-          <span className="h-3 w-3 rounded-full bg-primary" />
+          <LogoMark className="h-7 w-7" />
           <span className="font-display text-xl font-medium tracking-tight">Rounds</span>
         </Link>
 

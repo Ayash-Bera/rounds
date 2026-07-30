@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, FileWarning, Repeat } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LogoMark } from "@/components/logo-mark";
 
 const STATUS_COLOR = {
   full: "var(--status-full)",
@@ -56,7 +57,7 @@ export default function Home() {
 
         <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
           <Link href="/" className="flex items-center gap-2">
-            <span className="h-2.5 w-2.5 rounded-full bg-white" />
+            <LogoMark />
             <span className="font-display text-lg font-medium text-white">Rounds</span>
           </Link>
           <nav className="hidden items-center gap-8 text-sm text-white/70 md:flex">

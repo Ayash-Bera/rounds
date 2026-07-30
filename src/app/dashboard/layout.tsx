@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireManager } from "@/lib/auth-helpers";
 import { SignOutButton } from "@/components/sign-out-button";
+import { LogoMark } from "@/components/logo-mark";
 
 const NAV = [
   { href: "/dashboard", label: "Coverage" },
@@ -17,7 +18,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <header className="border-b border-border/70">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <span className="h-2.5 w-2.5 rounded-full bg-primary" />
+            <LogoMark />
             <span className="font-display text-lg font-medium">Rounds</span>
           </Link>
           <nav className="hidden gap-6 text-sm text-muted-foreground md:flex">
