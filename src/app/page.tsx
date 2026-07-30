@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, FileWarning, Repeat } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { OrbField } from "@/components/orb-field";
+import { CoverageSphere } from "@/components/coverage-sphere";
 import { StatusBadge } from "@/components/status-badge";
 
 export default function Home() {
@@ -27,32 +27,35 @@ export default function Home() {
 
       <main className="flex-1">
         <section className="mx-auto max-w-6xl px-6 pb-10 pt-4">
-          <div className="relative overflow-hidden rounded-3xl border border-border/70 bg-card">
-            <div className="relative grid gap-8 md:grid-cols-2">
+          <div className="relative overflow-hidden rounded-3xl bg-[#0e0f12]">
+            <div className="relative grid gap-8 md:grid-cols-[1.15fr_1fr]">
               <div className="flex flex-col justify-center px-8 py-14 md:px-12">
-                <span className="mb-5 inline-flex w-fit items-center gap-1.5 rounded-full bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground">
+                <span className="mb-5 inline-flex w-fit items-center gap-1.5 rounded-full border border-white/15 px-3 py-1 text-xs font-medium text-white/70">
                   Built for clinic scheduling
                 </span>
-                <h1 className="font-display text-4xl font-medium leading-[1.1] tracking-tight md:text-5xl">
-                  Every shift covered.
-                  <br />
-                  No spreadsheet required.
+                <h1 className="font-display text-4xl font-medium leading-[1.1] tracking-tight text-white md:text-[3.25rem]">
+                  Every shift covered. No spreadsheet required.
                 </h1>
-                <p className="mt-5 max-w-md text-muted-foreground">
+                <p className="mt-5 max-w-md text-white/60">
                   Rounds turns your clinic&apos;s messy shift spreadsheet into a live schedule.
                   Staff claim their own shifts, managers see exactly who&apos;s missing, and the
                   rules — headcount, overlap, no double-booking — hold up no matter how many
                   people are clicking at once.
                 </p>
                 <div className="mt-8 flex flex-wrap gap-3">
-                  <Button render={<Link href="/login" />} nativeButton={false} size="lg" className="gap-1.5 rounded-full">
+                  <Button
+                    render={<Link href="/login" />}
+                    nativeButton={false}
+                    size="lg"
+                    className="gap-1.5 rounded-full bg-white text-[#0e0f12] hover:bg-white/90"
+                  >
                     Sign in <ArrowRight className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
 
               <div className="relative min-h-[320px] md:min-h-0">
-                <OrbField />
+                <CoverageSphere />
               </div>
             </div>
           </div>
