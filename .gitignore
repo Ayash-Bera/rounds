@@ -42,3 +42,9 @@ next-env.d.ts
 
 # generated
 /src/generated/
+.env*
+
+# editor/tooling scaffolding
+/.agents/
+/.windsurf/
+skills-lock.json

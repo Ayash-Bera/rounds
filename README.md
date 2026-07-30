@@ -59,7 +59,10 @@ integration (Neon-backed) — no separate account needed, `DATABASE_URL` is inje
 Cold starts: none, both the app and database run on always-warm free-tier infrastructure at this
 scale.
 
-Live URL: _(added after deploy)_
+Live URL: **https://rounds-pi.vercel.app**
+
+Note: the free-tier Neon database can briefly cold-start (a couple seconds) after a period of
+inactivity — the first request after a lull may be slower than usual.
 
 ## Notable design decisions
 
