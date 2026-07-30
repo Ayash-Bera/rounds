@@ -2,76 +2,112 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, FileWarning, Repeat } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { StatusBadge } from "@/components/status-badge";
+
+const STATUS_COLOR = {
+  full: "var(--status-full)",
+  partial: "var(--status-partial)",
+  empty: "var(--status-empty)",
+} as const;
+
+const STATUS_LABEL = {
+  full: "Fully staffed",
+  partial: "Partially staffed",
+  empty: "Empty",
+} as const;
+
+function Dot({ status }: { status: keyof typeof STATUS_COLOR }) {
+  return <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: STATUS_COLOR[status] }} />;
+}
+
+const PREVIEW_SHIFTS = [
+  { day: "Mon", date: "Aug 3", time: "08:00–16:00", need: "2 nurses, 1 doctor", status: "full" as const },
+  {
+    day: "Mon",
+    date: "Aug 3",
+    time: "16:00–00:00",
+    need: "1 nurse, 1 doctor",
+    status: "partial" as const,
+    missing: "Missing 1 doctor",
+  },
+  {
+    day: "Tue",
+    date: "Aug 4",
+    time: "22:00–06:00",
+    need: "3 nurses, 1 doctor",
+    status: "empty" as const,
+    missing: "Missing 3 nurses, 1 doctor",
+  },
+];
 
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col bg-background">
-      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-primary" />
-          <span className="font-display text-lg font-medium">Rounds</span>
-        </Link>
-        <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
-          <a href="#import" className="hover:text-foreground">
-            Import
-          </a>
-          <a href="#coverage" className="hover:text-foreground">
-            Coverage
-          </a>
-        </nav>
-        <Button render={<Link href="/login" />} nativeButton={false} variant="outline" className="rounded-full">
-          Sign in
-        </Button>
-      </header>
+      <div className="relative flex min-h-svh flex-col overflow-hidden bg-[#0e0f12]">
+        <Image
+          src="/hero-visual.jpg"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/25 to-black/10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/60" />
 
-      <main className="flex-1">
-        <section className="mx-auto max-w-6xl px-6 pb-10 pt-4">
-          <div className="relative overflow-hidden rounded-3xl bg-[#0e0f12]">
-            <div className="relative grid gap-8 md:grid-cols-[1.15fr_1fr]">
-              <div className="flex flex-col justify-center px-8 py-14 md:px-12">
-                <span className="mb-5 inline-flex w-fit items-center gap-1.5 rounded-full border border-white/15 px-3 py-1 text-xs font-medium text-white/70">
-                  Built for clinic scheduling
-                </span>
-                <h1 className="font-display text-4xl font-medium leading-[1.1] tracking-tight text-white md:text-[3.25rem]">
-                  Every shift covered. No spreadsheet required.
-                </h1>
-                <p className="mt-5 max-w-md text-white/60">
-                  Rounds turns your clinic&apos;s messy shift spreadsheet into a live schedule.
-                  Staff claim their own shifts, managers see exactly who&apos;s missing, and the
-                  rules — headcount, overlap, no double-booking — hold up no matter how many
-                  people are clicking at once.
-                </p>
-                <div className="mt-8 flex flex-wrap gap-3">
-                  <Button
-                    render={<Link href="/login" />}
-                    nativeButton={false}
-                    size="lg"
-                    className="gap-1.5 rounded-full bg-white text-[#0e0f12] hover:bg-white/90"
-                  >
-                    Sign in <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+        <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
+          <Link href="/" className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-white" />
+            <span className="font-display text-lg font-medium text-white">Rounds</span>
+          </Link>
+          <nav className="hidden items-center gap-8 text-sm text-white/70 md:flex">
+            <a href="#import" className="hover:text-white">
+              Import
+            </a>
+            <a href="#coverage" className="hover:text-white">
+              Coverage
+            </a>
+          </nav>
+          <Button
+            render={<Link href="/login" />}
+            nativeButton={false}
+            variant="outline"
+            className="rounded-full border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white"
+          >
+            Sign in
+          </Button>
+        </header>
 
-              <div className="relative min-h-[320px] overflow-hidden md:min-h-0">
-                <Image
-                  src="/hero-visual.jpg"
-                  alt=""
-                  fill
-                  priority
-                  sizes="(min-width: 768px) 45vw, 100vw"
-                  className="object-cover"
-                  style={{
-                    maskImage: "radial-gradient(circle at center, black 55%, transparent 88%)",
-                    WebkitMaskImage: "radial-gradient(circle at center, black 55%, transparent 88%)",
-                  }}
-                />
+        <div className="relative z-10 flex flex-1 items-center px-6">
+          <div className="mx-auto w-full max-w-6xl">
+            <div className="max-w-xl">
+              <span className="mb-5 inline-flex w-fit items-center gap-1.5 rounded-full border border-white/25 px-3 py-1 text-xs font-medium text-white/80">
+                Built for clinic scheduling
+              </span>
+              <h1 className="font-display text-5xl font-medium leading-[1.05] tracking-tight text-white md:text-6xl">
+                Every shift covered. No spreadsheet required.
+              </h1>
+              <p className="mt-5 max-w-md text-white/70">
+                Rounds turns your clinic&apos;s messy shift spreadsheet into a live schedule.
+                Staff claim their own shifts, managers see exactly who&apos;s missing, and the
+                rules — headcount, overlap, no double-booking — hold up no matter how many
+                people are clicking at once.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Button
+                  render={<Link href="/login" />}
+                  nativeButton={false}
+                  size="lg"
+                  className="gap-1.5 rounded-full bg-white text-[#0e0f12] hover:bg-white/90"
+                >
+                  Sign in <ArrowRight className="h-4 w-4" />
+                </Button>
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </div>
 
+      <main className="flex-1">
         <section id="import" className="mx-auto max-w-6xl px-6 py-16">
           <div className="mb-10 max-w-lg">
             <h2 className="font-display text-2xl font-medium md:text-3xl">
@@ -103,7 +139,12 @@ export default function Home() {
               <ul className="space-y-2.5 text-sm">
                 <li className="flex items-center justify-between rounded-lg bg-muted px-3 py-2">
                   <span>Anya Haddad — nurse</span>
-                  <StatusBadge status="full" className="hidden sm:inline-flex" />
+                  <span
+                    className="hidden items-center gap-1.5 text-xs font-medium sm:inline-flex"
+                    style={{ color: STATUS_COLOR.full }}
+                  >
+                    <Dot status="full" /> Fully staffed
+                  </span>
                 </li>
                 <li className="flex items-center justify-between rounded-lg bg-muted px-3 py-2">
                   <span>Tara Rahman — nurse</span>
@@ -136,21 +177,28 @@ export default function Home() {
                 <Repeat className="h-4 w-4" /> Recurring shifts stay in sync automatically
               </div>
             </div>
-            <div className="space-y-2 rounded-2xl border border-border/70 bg-card p-5">
-              {[
-                { time: "Mon · 08:00–16:00", need: "2 nurses, 1 doctor", status: "full" as const },
-                { time: "Mon · 16:00–00:00", need: "1 doctor missing", status: "partial" as const },
-                { time: "Tue · 22:00–06:00", need: "3 nurses, 1 doctor missing", status: "empty" as const },
-              ].map((row) => (
-                <div
-                  key={row.time}
-                  className="flex items-center justify-between rounded-lg bg-muted px-4 py-3 text-sm"
-                >
-                  <div>
-                    <p className="font-medium">{row.time}</p>
-                    <p className="text-xs text-muted-foreground">{row.need}</p>
+            <div className="grid grid-cols-1 gap-3 rounded-2xl border border-border/70 bg-card p-5 sm:grid-cols-3">
+              {PREVIEW_SHIFTS.map((row, i) => (
+                <div key={i} className="min-w-0">
+                  <p className="mb-2 text-xs font-medium text-muted-foreground">
+                    {row.day} · {row.date}
+                  </p>
+                  <div className="group cursor-default rounded-lg border border-border/70 bg-background px-3 py-2.5 text-xs transition-colors hover:border-foreground/30">
+                    <div className="mb-1.5 flex items-center gap-1.5">
+                      <Dot status={row.status} />
+                      <span className="font-medium">{row.time}</span>
+                    </div>
+                    <p className="text-muted-foreground">{row.need}</p>
+                    {row.missing ? (
+                      <p className="mt-1 font-medium" style={{ color: STATUS_COLOR[row.status] }}>
+                        {row.missing}
+                      </p>
+                    ) : (
+                      <p className="mt-1 font-medium" style={{ color: STATUS_COLOR.full }}>
+                        {STATUS_LABEL.full}
+                      </p>
+                    )}
                   </div>
-                  <StatusBadge status={row.status} />
                 </div>
               ))}
             </div>
