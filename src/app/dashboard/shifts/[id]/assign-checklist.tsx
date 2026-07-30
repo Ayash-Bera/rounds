@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -29,22 +29,25 @@ export function AssignChecklist({
   removeAction: (shiftId: string, staffId: string) => Promise<ClaimResult>;
 }) {
   const [rows, setRows] = useState(staff);
-  const [pendingId, setPendingId] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [, startTransition] = useTransition();
+  const requestVersion = useRef<Record<string, number>>({});
 
   function toggle(id: string, checked: boolean) {
-    setPendingId(id);
+    // Flip immediately so the checkbox feels instant; the request confirms in the background.
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, claimed: checked } : r)));
     setErrors((prev) => ({ ...prev, [id]: "" }));
-    startTransition(async () => {
-      const action = checked ? assignAction : removeAction;
-      const result = await action(shiftId, id);
-      if (result.ok) {
-        setRows((prev) => prev.map((r) => (r.id === id ? { ...r, claimed: checked } : r)));
-      } else {
+
+    const version = (requestVersion.current[id] ?? 0) + 1;
+    requestVersion.current[id] = version;
+
+    const action = checked ? assignAction : removeAction;
+    action(shiftId, id).then((result) => {
+      // A newer toggle on this row already superseded this request — ignore the stale result.
+      if (requestVersion.current[id] !== version) return;
+      if (!result.ok) {
+        setRows((prev) => prev.map((r) => (r.id === id ? { ...r, claimed: !checked } : r)));
         setErrors((prev) => ({ ...prev, [id]: result.reason }));
       }
-      setPendingId(null);
     });
   }
 
@@ -86,7 +89,6 @@ export function AssignChecklist({
                       <label className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm hover:bg-accent">
                         <Checkbox
                           checked={s.claimed}
-                          disabled={pendingId === s.id}
                           onCheckedChange={(checked) => toggle(s.id, checked === true)}
                         />
                         {s.fullName}
