@@ -13,7 +13,17 @@ export default async function DashboardPage({
 }) {
   await requireManager();
   const { week } = await searchParams;
-  const weekStart = parseWeekParam(week);
+
+  let weekStart = parseWeekParam(week);
+  if (!week) {
+    const thisWeekCount = await prisma.shift.count({
+      where: { date: { gte: weekStart, lt: addDays(weekStart, 7) } },
+    });
+    if (thisWeekCount === 0) {
+      const earliestShift = await prisma.shift.findFirst({ orderBy: { date: "asc" } });
+      if (earliestShift) weekStart = parseWeekParam(formatWeekParam(earliestShift.date));
+    }
+  }
   const weekEnd = addDays(weekStart, 7);
   const weekParam = formatWeekParam(weekStart);
 
