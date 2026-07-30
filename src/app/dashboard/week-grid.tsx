@@ -2,13 +2,18 @@
 
 import useSWR from "swr";
 import Link from "next/link";
-import { StatusBadge } from "@/components/status-badge";
+import { MoonStar } from "lucide-react";
 import { formatRequirements, professionLabel } from "@/lib/format";
 import { weekDates } from "@/lib/week";
 import type { StaffingStatus } from "@/lib/coverage";
 import type { RequirementMap } from "@/lib/import/types";
 import type { Profession } from "@/generated/prisma/enums";
-import { cn } from "@/lib/utils";
+
+const STATUS_COLOR: Record<StaffingStatus, string> = {
+  full: "var(--status-full)",
+  partial: "var(--status-partial)",
+  empty: "var(--status-empty)",
+};
 
 export type CoverageShift = {
   id: string;
@@ -77,25 +82,27 @@ export function WeekGrid({
 }
 
 function ShiftCard({ shift }: { shift: CoverageShift }) {
+  const { status, missing } = shift.coverage;
   return (
     <Link
       href={`/dashboard/shifts/${shift.id}`}
-      className={cn(
-        "block rounded-lg border px-3 py-2.5 text-xs transition-colors hover:border-primary/50",
-        "border-border/70 bg-card"
-      )}
+      className="block rounded-lg border border-border/70 bg-card px-3 py-2.5 text-xs transition-colors hover:border-foreground/30"
     >
-      <div className="mb-1.5 flex items-center justify-between gap-2">
+      <div className="mb-1.5 flex items-center gap-1.5 whitespace-nowrap">
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: STATUS_COLOR[status] }} />
         <span className="font-medium">
           {shift.startTime}–{shift.endTime}
-          {shift.overnight ? " ⏵" : ""}
         </span>
-        <StatusBadge status={shift.coverage.status} />
+        {shift.overnight && <MoonStar className="h-3 w-3 shrink-0 text-muted-foreground" />}
       </div>
       <p className="text-muted-foreground">{formatRequirements(shift.requirements)}</p>
-      {shift.coverage.missing.length > 0 && (
-        <p className="mt-1 font-medium text-status-empty">
-          Missing {shift.coverage.missing.map((m) => `${m.count} ${professionLabel(m.profession)}`).join(", ")}
+      {missing.length > 0 ? (
+        <p className="mt-1 font-medium" style={{ color: STATUS_COLOR[status] }}>
+          Missing {missing.map((m) => `${m.count} ${professionLabel(m.profession)}`).join(", ")}
+        </p>
+      ) : (
+        <p className="mt-1 font-medium" style={{ color: STATUS_COLOR.full }}>
+          Fully staffed
         </p>
       )}
     </Link>
