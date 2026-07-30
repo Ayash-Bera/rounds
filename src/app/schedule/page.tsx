@@ -1,39 +1,74 @@
-import { AlertCircle } from "lucide-react";
+import Link from "next/link";
+import { AlertCircle, ChevronLeft, ChevronRight, MoonStar } from "lucide-react";
 import { requireUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
-import { computeCoverage } from "@/lib/coverage";
-import { formatDate, formatRequirements, professionLabel } from "@/lib/format";
-import { Card, CardContent } from "@/components/ui/card";
+import { computeCoverage, type StaffingStatus } from "@/lib/coverage";
+import { formatShortDate, formatRequirements, professionLabel } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { StatusBadge } from "@/components/status-badge";
 import type { RequirementMap } from "@/lib/import/types";
 import { claimAction, unclaimAction } from "./actions";
+
+const PAGE_SIZE = 20;
+
+const STATUS_COLOR: Record<StaffingStatus, string> = {
+  full: "var(--status-full)",
+  partial: "var(--status-partial)",
+  empty: "var(--status-empty)",
+};
+
+const STATUS_LABEL: Record<StaffingStatus, string> = {
+  full: "Fully staffed",
+  partial: "Partially staffed",
+  empty: "Empty",
+};
 
 export default async function SchedulePage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; page?: string }>;
 }) {
   const user = await requireUser();
   const params = await searchParams;
+  const page = Math.max(1, Number(params.page) || 1);
 
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
 
-  const shifts = await prisma.shift.findMany({
-    where: { date: { gte: today } },
-    include: { claims: true },
-    orderBy: [{ date: "asc" }, { startTime: "asc" }],
-    take: 100,
-  });
+  const [shifts, total] = await Promise.all([
+    prisma.shift.findMany({
+      where: { date: { gte: today } },
+      include: { claims: true },
+      orderBy: [{ date: "asc" }, { startTime: "asc" }],
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    }),
+    prisma.shift.count({ where: { date: { gte: today } } }),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const rangeStart = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const rangeEnd = Math.min(page * PAGE_SIZE, total);
+
+  const groups: { dateKey: string; label: string; shifts: typeof shifts }[] = [];
+  for (const shift of shifts) {
+    const dateKey = shift.date.toISOString().slice(0, 10);
+    const lastGroup = groups[groups.length - 1];
+    if (lastGroup?.dateKey === dateKey) {
+      lastGroup.shifts.push(shift);
+    } else {
+      groups.push({ dateKey, label: formatShortDate(shift.date), shifts: [shift] });
+    }
+  }
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-medium">Your schedule</h1>
         <p className="text-sm text-muted-foreground">
-          Upcoming shifts. Claim any that need a {user.profession ? professionLabel(user.profession) : "staff member"}.
+          {total === 0
+            ? "No upcoming shifts scheduled."
+            : `Claim any shift that needs a ${user.profession ? professionLabel(user.profession) : "staff member"}. Showing ${rangeStart}–${rangeEnd} of ${total}.`}
         </p>
       </div>
 
@@ -44,58 +79,115 @@ export default async function SchedulePage({
         </Alert>
       )}
 
-      <div className="space-y-3">
-        {shifts.map((shift) => {
-          const requirements = shift.requirements as RequirementMap;
-          const coverage = computeCoverage(requirements, shift.claims);
-          const ownClaim = shift.claims.find((c) => c.staffId === user.id);
-          const professionFull =
-            user.profession &&
-            coverage.claimedByProfession[user.profession] >= requirements[user.profession];
+      <div className="space-y-6">
+        {groups.map((group) => (
+          <div key={group.dateKey}>
+            <p className="mb-2 text-sm font-medium text-muted-foreground">{group.label}</p>
+            <div className="space-y-2">
+              {group.shifts.map((shift) => {
+                const requirements = shift.requirements as RequirementMap;
+                const coverage = computeCoverage(requirements, shift.claims);
+                const ownClaim = shift.claims.find((c) => c.staffId === user.id);
+                const professionFull =
+                  user.profession &&
+                  coverage.claimedByProfession[user.profession] >= requirements[user.profession];
 
-          return (
-            <Card key={shift.id} className="border-border/70">
-              <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
-                <div className="min-w-0 space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-medium">{formatDate(shift.date)}</p>
-                    <span className="text-sm text-muted-foreground">
-                      {shift.startTime}–{shift.endTime}
-                      {shift.overnight ? " (overnight)" : ""}
-                    </span>
+                return (
+                  <div
+                    key={shift.id}
+                    className={
+                      ownClaim
+                        ? "rounded-lg border border-primary/40 bg-primary/[0.04] px-4 py-3"
+                        : "rounded-lg border border-border/70 bg-card px-4 py-3"
+                    }
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className="h-1.5 w-1.5 shrink-0 rounded-full"
+                            style={{ background: STATUS_COLOR[coverage.status] }}
+                          />
+                          <span className="text-sm font-medium">
+                            {shift.startTime}–{shift.endTime}
+                          </span>
+                          {shift.overnight && (
+                            <MoonStar className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {formatRequirements(requirements)} · {STATUS_LABEL[coverage.status]}
+                        </p>
+                        {ownClaim && (
+                          <p className="text-xs font-medium text-primary">You&apos;re claimed on this shift</p>
+                        )}
+                      </div>
+                      {ownClaim ? (
+                        <form action={unclaimAction}>
+                          <input type="hidden" name="shiftId" value={shift.id} />
+                          <Button type="submit" variant="outline" size="sm" className="rounded-full">
+                            Unclaim
+                          </Button>
+                        </form>
+                      ) : professionFull ? (
+                        <span className="text-xs text-muted-foreground">No slots left for you</span>
+                      ) : (
+                        <form action={claimAction}>
+                          <input type="hidden" name="shiftId" value={shift.id} />
+                          <Button type="submit" size="sm" className="rounded-full">
+                            Claim
+                          </Button>
+                        </form>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground">{formatRequirements(requirements)}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <StatusBadge status={coverage.status} />
-                  {ownClaim ? (
-                    <form action={unclaimAction}>
-                      <input type="hidden" name="shiftId" value={shift.id} />
-                      <Button type="submit" variant="outline" size="sm" className="rounded-full">
-                        Unclaim
-                      </Button>
-                    </form>
-                  ) : professionFull ? (
-                    <Button variant="outline" size="sm" className="rounded-full" disabled>
-                      Full
-                    </Button>
-                  ) : (
-                    <form action={claimAction}>
-                      <input type="hidden" name="shiftId" value={shift.id} />
-                      <Button type="submit" size="sm" className="rounded-full">
-                        Claim
-                      </Button>
-                    </form>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                );
+              })}
+            </div>
+          </div>
+        ))}
         {shifts.length === 0 && (
           <p className="py-12 text-center text-sm text-muted-foreground">No upcoming shifts scheduled.</p>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between gap-3 pt-2">
+          {page <= 1 ? (
+            <Button variant="outline" size="sm" disabled className="gap-1.5 rounded-full">
+              <ChevronLeft className="h-4 w-4" /> Previous
+            </Button>
+          ) : (
+            <Button
+              render={<Link href={`/schedule?page=${page - 1}`} />}
+              nativeButton={false}
+              variant="outline"
+              size="sm"
+              className="gap-1.5 rounded-full"
+            >
+              <ChevronLeft className="h-4 w-4" /> Previous
+            </Button>
+          )}
+          <span className="text-sm text-muted-foreground">
+            Page {page} of {totalPages}
+          </span>
+          {page >= totalPages ? (
+            <Button variant="outline" size="sm" disabled className="gap-1.5 rounded-full">
+              Next <ChevronRight className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button
+              render={<Link href={`/schedule?page=${page + 1}`} />}
+              nativeButton={false}
+              variant="outline"
+              size="sm"
+              className="gap-1.5 rounded-full"
+            >
+              Next <ChevronRight className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
