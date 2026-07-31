@@ -43,8 +43,11 @@ next-env.d.ts
 # generated
 /src/generated/
 .env*
+!.env.example
 
 # editor/tooling scaffolding
 /.agents/
 /.windsurf/
 skills-lock.json
+CLAUDE.md
+AGENTS.md

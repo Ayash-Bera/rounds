@@ -1,7 +1,7 @@
 # Rounds
 
 A clinic shift scheduler. Managers create shifts and see coverage at a glance; staff claim shifts
-for themselves. Built for the take-home brief in `PROJECT_BRIEF.md`.
+for themselves.
 
 ## Stack
 
@@ -20,15 +20,13 @@ See `DECISIONS.md` for why these were chosen and the reasoning behind the tricki
 Requires Docker and Node 20.9+.
 
 ```bash
+cp .env.example .env        # local DB credentials + a dev-only auth secret
 docker compose up -d        # starts Postgres on localhost:5433
 npm install
 npx prisma migrate dev      # applies the schema
 npm run db:seed             # imports staff.csv / shifts.csv, creates the manager account
 npm run dev                 # http://localhost:3000
 ```
-
-`.env` is already checked in with a working local `DATABASE_URL` pointing at the docker-compose
-Postgres instance — no setup needed beyond the commands above.
 
 ## Tests
 
