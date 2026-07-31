@@ -62,19 +62,99 @@ coverage dashboard, claim-issue detection) treats a recurring shift exactly like
 no special-casing needed anywhere else in the codebase. The tradeoff is a capped generation limit
 (260 occurrences) to stop a mistyped end-date from generating years of shifts.
 
-## Hero video
+## Landing page visual direction
 
-The brief asked for a video-style hero. Rather than standing up a Remotion render pipeline (extra
-build dependency, headless-Chromium render step, more that can break the deploy), the tumbling-orb
-animation is pure CSS (`src/components/orb-field.tsx` + keyframes in `globals.css`) — visually a
-looping video, but a static asset with zero render risk and it respects
-`prefers-reduced-motion`. It also reuses the app's own status colors (green/amber/rose), so the
-marketing page previews the product's own visual language.
+The brief asked for a video-style hero. The first pass avoided a Remotion render pipeline (extra
+build dependency, headless-Chromium render step, more that can break the deploy) in favor of a
+tumbling-orb animation in pure CSS — visually a looping video, but a static asset with zero render
+risk, respecting `prefers-reduced-motion`.
+
+That got replaced later in a design pass toward something more deliberate and less templated. The
+palette moved from a lavender/violet gradient look to a quiet grayscale shell (near-white
+background, ink-black primary) with the product's own status colors — green/amber/coral — kept as
+the *only* accent anywhere, since they already carry real meaning in this app and didn't need
+competing with a second decorative color. The CSS orb animation itself went through one more
+iteration (an SVG "orbit rings" sphere, a literal visual pun on "coverage") before landing on a
+single full-bleed still image behind white overlay text — the simplest option that still reads as
+intentional, with all of the hero's boldness spent in one place rather than spread across an
+animated background *and* a busy layout. The eyebrow badge and pill-style buttons came out for the
+same reason: fewer competing shapes, one clear signature element.
+
+## Staff assignment UX
+
+The manager's shift-detail page originally used a native `<select>` for assigning staff. Two
+problems showed up under real use: assigning to a shift with many eligible staff meant scrolling a
+single flat list, and — separately — the dropdown's selected-value display broke and started
+rendering the staff member's raw database id instead of their name (a Base UI `Select.Value`
+resolution quirk: without an explicit `items` map, it falls back to stringifying the raw value
+rather than looking up the item's label).
+
+Rather than patch the dropdown, the whole interaction was replaced: staff are grouped into
+per-profession popovers (Nurses / Doctors / Receptionists), each a checklist with live headcount
+("2 of 3") and the assigned names shown inline so a manager doesn't need to open a group just to
+see who's on a shift. Two further rules come straight from the existing claim logic rather than
+duplicating it:
+
+- Staff with a conflicting overlapping shift elsewhere are filtered out of the list entirely
+  (reusing `shiftsOverlap` from `src/lib/claims/rules.ts`) — offering an assignment that the server
+  will reject anyway is just wasted motion.
+- Once a profession's required headcount is met, remaining unclaimed candidates in that group grey
+  out and can't be checked, since the server would reject them too (`validateClaim` already treats
+  `already >= needed` as a hard rejection, including when `needed` is `0`).
+
+The checkbox toggle is optimistic: it flips immediately on click and reconciles with the server in
+the background, rolling back (with an inline reason) only if the request is actually rejected. A
+per-row request-version counter guards against a slow, now-stale response clobbering a faster
+second click on the same row. This was a deliberate tradeoff — client state can briefly disagree
+with the server, but the server (`claimShiftForStaff`, `unclaimShift`) remains the sole source of
+truth and always wins on conflict, so the tradeoff never produces an incorrect *persisted* state,
+only a slightly-optimistic in-flight one.
+
+## Pagination
+
+Both the manager's shift list and the staff schedule page originally used a hard `take` cap with no
+pagination — the shift list silently stopped showing anything past row 60 with no indication more
+existed. Both now paginate for real (page param, `skip`/`take`, an accurate count query, and
+properly-disabled boundary controls). One implementation detail worth noting: a `disabled` prop on
+a `Button` rendered as a Next.js `Link` does nothing, since `disabled` isn't a valid attribute on an
+anchor tag — the boundary buttons render as a plain disabled `<button>` instead of a disabled-styled
+but still-clickable link.
+
+## CI/CD
+
+GitHub Actions runs typecheck and the full test suite on every push and pull request — no database
+required, since the test suite is entirely pure-function unit tests (CSV normalization, claim
+rules). Deployment itself is handled by Vercel's native GitHub integration rather than a deploy step
+inside the Actions workflow: pushes to `master` build and promote to production automatically, and
+the platform already handles build caching, rollback, and preview deployments better than
+reimplementing the same thing in CI would.
+
+## A note on local vs. production data
+
+At one point during the post-submission polish work, local development accidentally ran against the
+live production database instead of the local Postgres container — `.env.local` (pulled down once
+via `vercel env pull` for an earlier deploy) takes precedence over `.env` in Next.js's env-loading
+order, and it was carrying the production `DATABASE_URL`. A number of UI verification clicks during
+that window landed as real writes against production rather than disposable local test data. It was
+caught by comparing claim timestamps against what the test scripts had actually clicked, and the
+fix going forward is procedural: always pass an explicit `DATABASE_URL` override when starting a
+local dev server for testing, rather than trusting whichever `.env*` file happens to be present.
+Recording this here because it's the kind of mistake worth being explicit about rather than quietly
+tidying away.
 
 ## What I'd do differently with more time
 
-Add Postgres row-level locking tests that actually spin up concurrent requests against a live DB
-(the current claim-rule tests are unit tests against pure functions, not an integration test that
-proves the `SELECT ... FOR UPDATE` genuinely serializes two simultaneous claims) — and add an
-end-to-end test suite (Playwright) covering the claim/assign/import flows through the real UI, not
-just the underlying logic.
+- Add Postgres row-level locking tests that actually spin up concurrent requests against a live DB
+  (the current claim-rule tests are unit tests against pure functions, not an integration test that
+  proves the `SELECT ... FOR UPDATE` genuinely serializes two simultaneous claims) — this is the one
+  gap that directly touches a requirement the brief explicitly called out (multiple staff acting on
+  the same shift at once), rather than being purely a polish item.
+- Add an end-to-end test suite (Playwright) covering the claim/assign/import flows through the real
+  UI, not just the underlying logic.
+- Rate-limit the login endpoint — there's currently no throttling on credential attempts.
+- Add proper `error.tsx` / `not-found.tsx` boundaries in the app's own voice, instead of falling
+  back to Next's default crash screen.
+- Add an audit trail for claims (who assigned/removed whom, and when) — CSV imports already get
+  full per-row logging via `ImportLogRow`, but manual claim changes don't, which a real clinic
+  manager would likely want for resolving disputes.
+- Move off hardcoded UTC shift times toward a per-clinic timezone setting.
