@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter, Geist_Mono } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { PageTransition } from "@/components/page-transition";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -35,7 +36,9 @@ export default function RootLayout({
       className={`${fraunces.variable} ${inter.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <TooltipProvider>{children}</TooltipProvider>
+        <TooltipProvider>
+          <PageTransition>{children}</PageTransition>
+        </TooltipProvider>
       </body>
     </html>
   );

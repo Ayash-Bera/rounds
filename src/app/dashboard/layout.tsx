@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireManager } from "@/lib/auth-helpers";
 import { SignOutButton } from "@/components/sign-out-button";
 import { LogoMark } from "@/components/logo-mark";
+import { NavLink } from "@/components/nav-link";
 
 const NAV = [
   { href: "/dashboard", label: "Coverage" },
@@ -21,11 +22,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <LogoMark />
             <span className="font-display text-lg font-medium">Rounds</span>
           </Link>
-          <nav className="hidden gap-6 text-sm text-muted-foreground md:flex">
+          <nav className="hidden gap-6 text-sm md:flex">
             {NAV.map((item) => (
-              <Link key={item.href} href={item.href} className="hover:text-foreground">
+              <NavLink key={item.href} href={item.href}>
                 {item.label}
-              </Link>
+              </NavLink>
             ))}
           </nav>
           <div className="flex items-center gap-3 text-sm">
@@ -33,11 +34,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <SignOutButton />
           </div>
         </div>
-        <nav className="flex gap-4 overflow-x-auto border-t border-border/70 px-6 py-2 text-sm text-muted-foreground md:hidden">
+        <nav className="flex gap-4 overflow-x-auto border-t border-border/70 px-6 py-2 text-sm md:hidden">
           {NAV.map((item) => (
-            <Link key={item.href} href={item.href} className="whitespace-nowrap hover:text-foreground">
+            <NavLink key={item.href} href={item.href} className="whitespace-nowrap">
               {item.label}
-            </Link>
+            </NavLink>
           ))}
         </nav>
       </header>

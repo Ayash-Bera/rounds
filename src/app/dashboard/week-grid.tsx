@@ -2,6 +2,7 @@
 
 import useSWR from "swr";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { MoonStar } from "lucide-react";
 import { formatRequirements, professionLabel } from "@/lib/format";
 import { weekDates } from "@/lib/week";
@@ -66,8 +67,15 @@ export function WeekGrid({
             <p className="text-xs text-muted-foreground">{DAY_NUM.format(day)}</p>
           </div>
           <div className="space-y-2">
-            {dayShifts.map((shift) => (
-              <ShiftCard key={shift.id} shift={shift} />
+            {dayShifts.map((shift, i) => (
+              <motion.div
+                key={shift.id}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: Math.min(i, 6) * 0.03 }}
+              >
+                <ShiftCard shift={shift} />
+              </motion.div>
             ))}
             {dayShifts.length === 0 && (
               <p className="rounded-lg border border-dashed border-border/70 px-3 py-4 text-center text-xs text-muted-foreground">

@@ -53,7 +53,19 @@ export default async function DashboardPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-medium">Coverage</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="font-display text-2xl font-medium">Coverage</h1>
+            <span
+              className="flex items-center gap-1.5 text-xs text-muted-foreground"
+              title="This view refreshes automatically every few seconds"
+            >
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-status-full opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-status-full" />
+              </span>
+              Live
+            </span>
+          </div>
           <p className="text-sm text-muted-foreground">{formatWeekRangeLabel(weekStart)}</p>
         </div>
         <WeekNav weekParam={weekParam} />

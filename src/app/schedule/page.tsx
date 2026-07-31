@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { computeCoverage, type StaffingStatus } from "@/lib/coverage";
 import { formatShortDate, formatRequirements, professionLabel } from "@/lib/format";
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/submit-button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { RequirementMap } from "@/lib/import/types";
 import { claimAction, unclaimAction } from "./actions";
@@ -125,18 +126,16 @@ export default async function SchedulePage({
                       {ownClaim ? (
                         <form action={unclaimAction}>
                           <input type="hidden" name="shiftId" value={shift.id} />
-                          <Button type="submit" variant="outline" size="sm" className="rounded-full">
+                          <SubmitButton pendingLabel="Unclaiming" variant="outline" size="sm">
                             Unclaim
-                          </Button>
+                          </SubmitButton>
                         </form>
                       ) : professionFull ? (
                         <span className="text-xs text-muted-foreground">No slots left for you</span>
                       ) : (
                         <form action={claimAction}>
                           <input type="hidden" name="shiftId" value={shift.id} />
-                          <Button type="submit" size="sm" className="rounded-full">
-                            Claim
-                          </Button>
+                          <SubmitButton pendingLabel="Claiming" size="sm">Claim</SubmitButton>
                         </form>
                       )}
                     </div>

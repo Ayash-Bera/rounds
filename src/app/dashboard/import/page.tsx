@@ -1,10 +1,10 @@
 import { Upload } from "lucide-react";
 import { requireManager } from "@/lib/auth-helpers";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { SubmitButton } from "@/components/submit-button";
 import { uploadShiftsCsvAction, uploadStaffCsvAction } from "./actions";
 
 export default async function ImportPage({
@@ -46,9 +46,9 @@ export default async function ImportPage({
               <Label htmlFor="staff-file">CSV file</Label>
               <Input id="staff-file" name="file" type="file" accept=".csv,text/csv" required />
             </div>
-            <Button type="submit" className="gap-1.5 rounded-full">
+            <SubmitButton pendingLabel="Importing">
               <Upload className="h-4 w-4" /> Import
-            </Button>
+            </SubmitButton>
           </form>
         </CardContent>
       </Card>
@@ -64,9 +64,9 @@ export default async function ImportPage({
               <Label htmlFor="shifts-file">CSV file</Label>
               <Input id="shifts-file" name="file" type="file" accept=".csv,text/csv" required />
             </div>
-            <Button type="submit" className="gap-1.5 rounded-full">
+            <SubmitButton pendingLabel="Importing">
               <Upload className="h-4 w-4" /> Import
-            </Button>
+            </SubmitButton>
           </form>
         </CardContent>
       </Card>
