@@ -2,27 +2,16 @@ import Link from "next/link";
 import { AlertCircle, ChevronLeft, ChevronRight, MoonStar } from "lucide-react";
 import { requireUser } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/db";
-import { computeCoverage, type StaffingStatus } from "@/lib/coverage";
+import { computeCoverage } from "@/lib/coverage";
 import { formatShortDate, formatRequirements, professionLabel } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { SubmitButton } from "@/components/submit-button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { CoverageMeter, STATUS_COLOR } from "@/components/coverage-meter";
 import type { RequirementMap } from "@/lib/import/types";
 import { claimAction, unclaimAction } from "./actions";
 
 const PAGE_SIZE = 20;
-
-const STATUS_COLOR: Record<StaffingStatus, string> = {
-  full: "var(--status-full)",
-  partial: "var(--status-partial)",
-  empty: "var(--status-empty)",
-};
-
-const STATUS_LABEL: Record<StaffingStatus, string> = {
-  full: "Fully staffed",
-  partial: "Partially staffed",
-  empty: "Empty",
-};
 
 export default async function SchedulePage({
   searchParams,
@@ -98,27 +87,27 @@ export default async function SchedulePage({
                     key={shift.id}
                     className={
                       ownClaim
-                        ? "rounded-lg border border-primary/40 bg-primary/[0.04] px-4 py-3"
-                        : "rounded-lg border border-border/70 bg-card px-4 py-3"
+                        ? "rounded-lg border border-primary/40 border-l-2 bg-primary/[0.04] px-4 py-3"
+                        : "rounded-lg border border-border/70 border-l-2 bg-card px-4 py-3"
                     }
+                    style={{ borderLeftColor: STATUS_COLOR[coverage.status] }}
                   >
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div className="min-w-0 space-y-1">
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className="h-1.5 w-1.5 shrink-0 rounded-full"
-                            style={{ background: STATUS_COLOR[coverage.status] }}
-                          />
+                        <div className="flex items-center gap-2.5">
                           <span className="text-sm font-medium">
                             {shift.startTime}–{shift.endTime}
                           </span>
                           {shift.overnight && (
                             <MoonStar className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                           )}
+                          <CoverageMeter
+                            filled={coverage.filled}
+                            needed={coverage.needed}
+                            status={coverage.status}
+                          />
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          {formatRequirements(requirements)} · {STATUS_LABEL[coverage.status]}
-                        </p>
+                        <p className="text-xs text-muted-foreground">{formatRequirements(requirements)}</p>
                         {ownClaim && (
                           <p className="text-xs font-medium text-primary">You&apos;re claimed on this shift</p>
                         )}

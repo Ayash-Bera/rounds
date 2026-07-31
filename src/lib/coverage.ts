@@ -7,6 +7,8 @@ export type CoverageSummary = {
   status: StaffingStatus;
   missing: { profession: Profession; count: number }[];
   claimedByProfession: Record<Profession, number>;
+  filled: number;
+  needed: number;
 };
 
 export function computeCoverage(
@@ -20,15 +22,16 @@ export function computeCoverage(
     .filter((p) => claimedByProfession[p] < requirements[p])
     .map((p) => ({ profession: p, count: requirements[p] - claimedByProfession[p] }));
 
-  const totalClaimedTowardNeed =
+  const needed = requirements.DOCTOR + requirements.NURSE + requirements.RECEPTIONIST;
+  const filled =
     Math.min(claimedByProfession.DOCTOR, requirements.DOCTOR) +
     Math.min(claimedByProfession.NURSE, requirements.NURSE) +
     Math.min(claimedByProfession.RECEPTIONIST, requirements.RECEPTIONIST);
 
   let status: StaffingStatus;
   if (missing.length === 0) status = "full";
-  else if (totalClaimedTowardNeed === 0) status = "empty";
+  else if (filled === 0) status = "empty";
   else status = "partial";
 
-  return { status, missing, claimedByProfession };
+  return { status, missing, claimedByProfession, filled, needed };
 }

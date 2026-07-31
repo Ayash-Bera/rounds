@@ -1,28 +1,21 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, FileWarning, Repeat } from "lucide-react";
+import { CheckCircle2, FileWarning, Repeat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LogoMark } from "@/components/logo-mark";
 import { HeroContent } from "@/components/hero-content";
-
-const STATUS_COLOR = {
-  full: "var(--status-full)",
-  partial: "var(--status-partial)",
-  empty: "var(--status-empty)",
-} as const;
-
-const STATUS_LABEL = {
-  full: "Fully staffed",
-  partial: "Partially staffed",
-  empty: "Empty",
-} as const;
-
-function Dot({ status }: { status: keyof typeof STATUS_COLOR }) {
-  return <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: STATUS_COLOR[status] }} />;
-}
+import { CoverageMeter, STATUS_COLOR } from "@/components/coverage-meter";
 
 const PREVIEW_SHIFTS = [
-  { day: "Mon", date: "Aug 3", time: "08:00–16:00", need: "2 nurses, 1 doctor", status: "full" as const },
+  {
+    day: "Mon",
+    date: "Aug 3",
+    time: "08:00–16:00",
+    need: "2 nurses, 1 doctor",
+    status: "full" as const,
+    filled: 3,
+    needed: 3,
+  },
   {
     day: "Mon",
     date: "Aug 3",
@@ -30,6 +23,8 @@ const PREVIEW_SHIFTS = [
     need: "1 nurse, 1 doctor",
     status: "partial" as const,
     missing: "Missing 1 doctor",
+    filled: 1,
+    needed: 2,
   },
   {
     day: "Tue",
@@ -38,6 +33,8 @@ const PREVIEW_SHIFTS = [
     need: "3 nurses, 1 doctor",
     status: "empty" as const,
     missing: "Missing 3 nurses, 1 doctor",
+    filled: 0,
+    needed: 4,
   },
 ];
 
@@ -118,11 +115,8 @@ export default function Home() {
               <ul className="space-y-2.5 text-sm">
                 <li className="flex items-center justify-between rounded-lg bg-muted px-3 py-2">
                   <span>Anya Haddad — nurse</span>
-                  <span
-                    className="hidden items-center gap-1.5 text-xs font-medium sm:inline-flex"
-                    style={{ color: STATUS_COLOR.full }}
-                  >
-                    <Dot status="full" /> Fully staffed
+                  <span className="hidden items-center gap-1 text-xs font-medium sm:inline-flex">
+                    <CheckCircle2 className="h-3.5 w-3.5" style={{ color: STATUS_COLOR.full }} /> matched
                   </span>
                 </li>
                 <li className="flex items-center justify-between rounded-lg bg-muted px-3 py-2">
@@ -162,21 +156,16 @@ export default function Home() {
                   <p className="mb-2 text-xs font-medium text-muted-foreground">
                     {row.day} · {row.date}
                   </p>
-                  <div className="group cursor-default rounded-lg border border-border/70 bg-background px-3 py-2.5 text-xs transition-colors hover:border-foreground/30">
-                    <div className="mb-1.5 flex items-center gap-1.5">
-                      <Dot status={row.status} />
+                  <div
+                    className="group cursor-default rounded-lg border border-border/70 border-l-2 bg-background px-3 py-2.5 text-xs transition-colors hover:border-foreground/30"
+                    style={{ borderLeftColor: STATUS_COLOR[row.status] }}
+                  >
+                    <div className="mb-1.5 flex items-center justify-between gap-2">
                       <span className="font-medium">{row.time}</span>
+                      <CoverageMeter filled={row.filled} needed={row.needed} status={row.status} />
                     </div>
                     <p className="text-muted-foreground">{row.need}</p>
-                    {row.missing ? (
-                      <p className="mt-1 font-medium" style={{ color: STATUS_COLOR[row.status] }}>
-                        {row.missing}
-                      </p>
-                    ) : (
-                      <p className="mt-1 font-medium" style={{ color: STATUS_COLOR.full }}>
-                        {STATUS_LABEL.full}
-                      </p>
-                    )}
+                    {row.missing && <p className="mt-1 text-muted-foreground">{row.missing}</p>}
                   </div>
                 </div>
               ))}

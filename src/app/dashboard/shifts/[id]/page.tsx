@@ -6,7 +6,7 @@ import { getShiftClaimIssues } from "@/lib/claims/db";
 import { shiftsOverlap } from "@/lib/claims/rules";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { StatusBadge } from "@/components/status-badge";
+import { CoverageMeter } from "@/components/coverage-meter";
 import { formatDate, formatRequirements, professionLabel } from "@/lib/format";
 import { computeCoverage } from "@/lib/coverage";
 import type { RequirementMap } from "@/lib/import/types";
@@ -118,7 +118,7 @@ export default async function ShiftDetailPage({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="font-display text-lg font-medium">Staffing</CardTitle>
-          <StatusBadge status={coverage.status} />
+          <CoverageMeter filled={coverage.filled} needed={coverage.needed} status={coverage.status} />
         </CardHeader>
         <CardContent className="space-y-4">
           {coverage.missing.length > 0 && (

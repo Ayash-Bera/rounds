@@ -5,7 +5,7 @@ import { requireManager } from "@/lib/auth-helpers";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { StatusBadge } from "@/components/status-badge";
+import { CoverageMeter } from "@/components/coverage-meter";
 import { formatDate, formatRequirements } from "@/lib/format";
 import { computeCoverage } from "@/lib/coverage";
 import type { RequirementMap } from "@/lib/import/types";
@@ -99,7 +99,7 @@ export default async function ShiftsPage({
                   <p className="text-sm text-muted-foreground">{formatRequirements(requirements)}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <StatusBadge status={coverage.status} />
+                  <CoverageMeter filled={coverage.filled} needed={coverage.needed} status={coverage.status} />
                   <ShiftDialog
                     mode="edit"
                     shift={{
