@@ -4,7 +4,7 @@ import useSWR from "swr";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { MoonStar } from "lucide-react";
-import { formatRequirements, professionLabel } from "@/lib/format";
+import { formatProfessionCount, formatRequirements } from "@/lib/format";
 import { weekDates } from "@/lib/week";
 import { CoverageMeter, STATUS_COLOR } from "@/components/coverage-meter";
 import type { StaffingStatus } from "@/lib/coverage";
@@ -94,17 +94,17 @@ function ShiftCard({ shift }: { shift: CoverageShift }) {
       className="block rounded-lg border border-border/70 border-l-2 bg-card px-3 py-2.5 text-xs transition-colors hover:border-foreground/30"
       style={{ borderLeftColor: STATUS_COLOR[status] }}
     >
-      <div className="mb-1.5 flex items-center justify-between gap-2 whitespace-nowrap">
-        <span className="flex items-center gap-1.5 font-medium">
+      <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+        <span className="flex items-center gap-1.5 whitespace-nowrap font-medium">
           {shift.startTime}–{shift.endTime}
           {shift.overnight && <MoonStar className="h-3 w-3 shrink-0 text-muted-foreground" />}
         </span>
-        <CoverageMeter filled={filled} needed={needed} status={status} />
+        <CoverageMeter filled={filled} needed={needed} status={status} className="ml-auto" />
       </div>
       <p className="text-muted-foreground">{formatRequirements(shift.requirements)}</p>
       {missing.length > 0 && (
         <p className="mt-1 text-muted-foreground">
-          Needs {missing.map((m) => `${m.count} ${professionLabel(m.profession)}`).join(", ")}
+          Needs {missing.map((m) => formatProfessionCount(m.profession, m.count)).join(", ")}
         </p>
       )}
     </Link>

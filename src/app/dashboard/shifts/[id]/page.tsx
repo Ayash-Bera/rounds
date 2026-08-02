@@ -7,7 +7,7 @@ import { shiftsOverlap } from "@/lib/claims/rules";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CoverageMeter } from "@/components/coverage-meter";
-import { formatDate, formatRequirements, professionLabel } from "@/lib/format";
+import { formatDate, formatProfessionCount, formatRequirements } from "@/lib/format";
 import { computeCoverage } from "@/lib/coverage";
 import type { RequirementMap } from "@/lib/import/types";
 import { assignStaffAction, removeClaimAction } from "../actions";
@@ -123,7 +123,7 @@ export default async function ShiftDetailPage({
         <CardContent className="space-y-4">
           {coverage.missing.length > 0 && (
             <p className="text-sm text-muted-foreground">
-              Missing: {coverage.missing.map((m) => `${m.count} ${professionLabel(m.profession)}`).join(", ")}
+              Missing: {coverage.missing.map((m) => formatProfessionCount(m.profession, m.count)).join(", ")}
             </p>
           )}
 
